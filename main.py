@@ -46,11 +46,12 @@ def abrir_site(lista):
         navegador = play.chromium.launch(headless=False)
         pagina = navegador.new_page()
         pagina.goto(URL)
+        pagina.wait_for_load_state("domcontentloaded")
 
         barra_pesquisa(pagina,lista)
 
         # Provisório para não fechar
-        print(f"Site aberto para fechar precione [bold yellow]ENTER[/]...")
+        print(f"Script rodou para finalizar pressione [bold yellow]ENTER[/]...")
         input()
         navegador.close()
 
@@ -72,9 +73,31 @@ def barra_pesquisa(pagina,lista):
             print(f"[bold red]Menu não encontrada[/]")
             raise RuntimeError("Barra e menu não encontrados")
 
+# Realiza a pesquisa
 def pesquisar(pagina,barra,lista):
-    barra.fill(lista[0])
+    btn = pagina.locator('[class="input-group-btn search-btn"]')
+    if btn.is_visible():
+        print("[bold green]Botão de pesquisar encontrado[/]")
+        for p in lista:
+            barra.fill(p)
+            btn.click()
+            pagina.wait_for_load_state("domcontentloaded")
+            print(f"[bold green]Pesquisa {p} realizada com sucesso[/]")
+            conteudo(pagina)
+    else:
+        print("[bold red]Botão de pesquisar não encontrado[/]")
+        raise RuntimeError("Botão de pesquisar não encontrado")
 
+# Válida o conteudo
+def conteudo(pagina):
+    linha_tab = pagina.locator("tbody>tr")
+    if linha_tab.count() > 0:
+        print(f"[bold green]Foram encontrados nessa página: {linha_tab.count()} itens[/]")
+            
+    else:
+        print(f"[bold red]Nenhum conteúdo encontrado[/]")
+
+# Inicia todo o projeto
 def start():
     validacao_env()
     lista = leitura_arq()

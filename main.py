@@ -91,7 +91,9 @@ def pesquisar(pagina,barra,lista):
             pagina.wait_for_load_state("domcontentloaded")
 
             print(f"[bold green]Pesquisa {p} realizada com sucesso[/]")
-            conteudo(pagina)
+            links = conteudo(pagina)
+            if links:
+                add_json(p,links)
             time.sleep(1)
     else:
         print("[bold red]Botão de pesquisar não encontrado[/]")
@@ -115,12 +117,40 @@ def conteudo(pagina):
             
         print(f"[bold green]Todos os links foram adicionados a lista.[/]")
         print(f"[bold blue]{temp_links}[/]")
-        # Escreve no arquivo
-        with open('content\\data.json','a',encoding='utf-8') as arq:
-            json.dump(temp_links,arq,ensure_ascii=False,indent=4)
+        return temp_links
             
     else:
         print(f"[bold red]Nenhum conteúdo encontrado[/]")
+
+# Válida e escreve no .json
+def add_json(nome, dados):
+    # Lê o que já existe no arquivo
+    with open('content\\data.json', 'r', encoding='utf-8') as arq:
+        objeto = json.load(arq)
+
+    # Verifica se a busca já existe
+    if nome in objeto:
+        print(f'[bold red]Já possuímos dados de: {nome}[/]')
+        novos = 0
+
+        # Verifica cada link individualmente
+        for link in dados:
+            if link not in objeto[nome]:
+                objeto[nome].append(link)
+                novos += 1
+
+        if novos == 0:
+            print('[bold yellow]Não há novos dados para adicionarmos[/]')
+        else:
+            print(f'[bold green]Adicionamos {novos} dados novos ao .json[/]')
+
+    else:
+        objeto[nome] = dados
+        print(f'[bold green]Adicionamos os dados ao .json[/]')
+
+    # Salva o resultado
+    with open('content\\data.json', 'w', encoding='utf-8') as arq:
+        json.dump(objeto, arq, ensure_ascii=False, indent=4)
 
 # Inicia todo o projeto
 def start():

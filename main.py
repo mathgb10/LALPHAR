@@ -7,6 +7,8 @@ import time
 from rich import print
 from dotenv import load_dotenv
 
+import json
+
 # Carrega .env
 load_dotenv()
 
@@ -31,6 +33,7 @@ def leitura_arq():
     with open(ARQ,'r',encoding='utf-8') as arq:
         linhas = arq.readlines()
         temp_lista = []
+
         for i in range(len(linhas)):
             temp_lista.append(linhas[i].replace('\n',''))
 
@@ -65,7 +68,9 @@ def barra_pesquisa(pagina,lista):
     else:
         print(f"[bold red]Barra de pesquisa não encontrada[/]")
         print(f"[bold yellow]Talvez esteja escondida em um menu hamburger, vamos tentar encontrar...[/]")
+        
         menu = pagina.locator('xpath=/html/body/nav/div/div[1]/button')
+        
         if menu.is_visible():
             menu.click()
             pesquisar(pagina,barra_pesq,lista)
@@ -76,14 +81,18 @@ def barra_pesquisa(pagina,lista):
 # Realiza a pesquisa
 def pesquisar(pagina,barra,lista):
     btn = pagina.locator('[class="input-group-btn search-btn"]')
+    
     if btn.is_visible():
         print("[bold green]Botão de pesquisar encontrado[/]")
+        
         for p in lista:
             barra.fill(p)
             btn.click()
             pagina.wait_for_load_state("domcontentloaded")
+
             print(f"[bold green]Pesquisa {p} realizada com sucesso[/]")
             conteudo(pagina)
+            time.sleep(1)
     else:
         print("[bold red]Botão de pesquisar não encontrado[/]")
         raise RuntimeError("Botão de pesquisar não encontrado")
@@ -91,8 +100,24 @@ def pesquisar(pagina,barra,lista):
 # Válida o conteudo
 def conteudo(pagina):
     linha_tab = pagina.locator("tbody>tr")
+
+    # Se a tabela existir
     if linha_tab.count() > 0:
         print(f"[bold green]Foram encontrados nessa página: {linha_tab.count()} itens[/]")
+        temp_links = []
+
+        for l in range(linha_tab.count()):
+            linha = linha_tab.nth(l)
+            celula = linha.locator("td").nth(1)
+            link = celula.locator("a:not(.comments)")
+            # print(link.get_attribute('href'))
+            temp_links.append(link.get_attribute('href'))
+            
+        print(f"[bold green]Todos os links foram adicionados a lista.[/]")
+        print(f"[bold blue]{temp_links}[/]")
+        # Escreve no arquivo
+        with open('content\\data.json','a',encoding='utf-8') as arq:
+            json.dump(temp_links,arq,ensure_ascii=False,indent=4)
             
     else:
         print(f"[bold red]Nenhum conteúdo encontrado[/]")

@@ -99,9 +99,33 @@ def pesquisar(pagina,barra,lista):
         print("[bold red]Botão de pesquisar não encontrado[/]")
         raise RuntimeError("Botão de pesquisar não encontrado")
 
+# Válido se existem outras páginas e o botão próximo
+def btns_paginas(pagina):
+    temp_retornos = []
+    proximo = pagina.locator('[class="next"]')
+    if proximo.is_visible():
+        print(f"[bold green]Botão de próximo encontrado[/]")
+        temp_retornos.append(proximo)
+    
+    outras_paginas = pagina.locator('[class="pagination"]')
+    if outras_paginas.is_visible():
+        print(f"[bold green]Paginação encontrada[/]")
+
+        numero_total = outras_paginas.locator('li:not(.next, .previous)').last
+        if numero_total.is_visible():
+            print(f"[bold green]Foram encontradas: {numero_total.inner_text()} páginas[/]")
+            temp_retornos.append(numero_total.inner_text())
+        else: 
+            print(f"[bold red]Número total de páginas disponíveis não encontrado[/]")
+    else:
+        print(f"[bold red]Paginação não encontrada[/]")
+
+    return temp_retornos
+
 # Válida o conteudo
 def conteudo(pagina):
     linha_tab = pagina.locator("tbody>tr")
+    btns_paginas(pagina)
 
     # Se a tabela existir
     if linha_tab.count() > 0:
@@ -154,6 +178,10 @@ def add_json(nome, dados):
 
 # Inicia todo o projeto
 def start():
+    if os.name == 'nt':
+        os.system('cls')
+    else:
+        os.system('clear') 
     validacao_env()
     lista = leitura_arq()
 

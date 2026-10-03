@@ -30,13 +30,17 @@ def validacao_env():
 
 # Função que lê o arquivo com as buscas e os retorna
 def leitura_arq():
+    # Abre o arquivo em leitura
     with open(ARQ,'r',encoding='utf-8') as arq:
+        # Lê as linhas do arquivo 
         linhas = arq.readlines()
         temp_lista = []
 
+        # Removo o \n no final das linhas e adiciono a lista temporária
         for i in range(len(linhas)):
             temp_lista.append(linhas[i].replace('\n',''))
 
+        # Caso a lista esteja vazia, retorno um erro
         if not temp_lista:
             print(f'[bold red]Arquivo de dicionário vazio[/]')
             raise RuntimeError("Dicionário não configurado")
@@ -46,11 +50,14 @@ def leitura_arq():
 # Abre o navegador no site definido
 def abrir_site(lista):
     with sync_playwright() as play:
+        # Abro o navegador e a página
         navegador = play.chromium.launch(headless=False)
         pagina = navegador.new_page()
         pagina.goto(URL)
+        # Espero a página carregar
         pagina.wait_for_load_state("domcontentloaded")
 
+        # Chamo a função que encontra a barra de pesquisa
         barra_pesquisa(pagina,lista)
 
         # Provisório para não fechar
@@ -62,6 +69,7 @@ def abrir_site(lista):
 def barra_pesquisa(pagina,lista):
     barra_pesq = pagina.locator('[class="form-control search-bar"]')
 
+    # Se a barra for visivel, chamo a função de pesquisa
     if barra_pesq.is_visible():
         print(f"[bold green]Barra de pesquisa encontrada[/]")
         pesquisar(pagina,barra_pesq,lista)
@@ -78,65 +86,77 @@ def barra_pesquisa(pagina,lista):
             print(f"[bold red]Menu não encontrada[/]")
             raise RuntimeError("Barra e menu não encontrados")
 
-# Realiza a pesquisa
 def pesquisar(pagina,barra,lista):
     btn = pagina.locator('[class="input-group-btn search-btn"]')
-    
+
+    # Se o botão de pesquisa for visivel, realizo a pesquisa se não retorno um erro
     if btn.is_visible():
         print("[bold green]Botão de pesquisar encontrado[/]")
-        
+
+        # Percorre minha lista de pesquisa
         for p in lista:
             barra.fill(p)
             btn.click()
             pagina.wait_for_load_state("domcontentloaded")
 
             print(f"[bold green]Pesquisa {p} realizada com sucesso[/]")
-            links = conteudo(pagina)
-            if links:
-                add_json(p,links)
+            todos_links = []
+
+            while True:
+                links = conteudo(pagina)
+                if links:
+                    todos_links.extend(links)
+
+                if not btn_proximo(pagina):
+                    break
+
+            if todos_links:
+                add_json(p, todos_links)
+
             time.sleep(1)
+
     else:
         print("[bold red]Botão de pesquisar não encontrado[/]")
         raise RuntimeError("Botão de pesquisar não encontrado")
 
 # Válido se existem outras páginas e o botão próximo
-def btns_paginas(pagina):
-    temp_retornos = []
-    proximo = pagina.locator('[class="next"]')
-    if proximo.is_visible():
-        print(f"[bold green]Botão de próximo encontrado[/]")
-        temp_retornos.append(proximo)
+def btn_proximo(pagina):
+    proximo = pagina.locator('li.next')
+    if proximo.count() == 0:
+        print(f"[bold yellow]Botão próximo não encontrado[/]")
+        return False
+
+    # Se o botão estiver desabilitado, retorno false
+    if "disabled" in proximo.get_attribute('class'):
+        print(f"[bold yellow]Botão próximo desabilitado[/]")
+        return False
+
+    link = proximo.locator('a')
+
+    if link.count() == 0:
+        return False
     
-    outras_paginas = pagina.locator('[class="pagination"]')
-    if outras_paginas.is_visible():
-        print(f"[bold green]Paginação encontrada[/]")
-
-        numero_total = outras_paginas.locator('li:not(.next, .previous)').last
-        if numero_total.is_visible():
-            print(f"[bold green]Foram encontradas: {numero_total.inner_text()} páginas[/]")
-            temp_retornos.append(numero_total.inner_text())
-        else: 
-            print(f"[bold red]Número total de páginas disponíveis não encontrado[/]")
-    else:
-        print(f"[bold red]Paginação não encontrada[/]")
-
-    return temp_retornos
+    link.click()
+    pagina.wait_for_load_state("domcontentloaded")
+    return True
 
 # Válida o conteudo
 def conteudo(pagina):
     linha_tab = pagina.locator("tbody>tr")
-    btns_paginas(pagina)
-
+    
     # Se a tabela existir
     if linha_tab.count() > 0:
         print(f"[bold green]Foram encontrados nessa página: {linha_tab.count()} itens[/]")
         temp_links = []
 
+        # Vou percorrer cada linha da tabela e pegar o link do item
         for l in range(linha_tab.count()):
             linha = linha_tab.nth(l)
             celula = linha.locator("td").nth(1)
+            # :not é para evitar o item com a classe comments
             link = celula.locator("a:not(.comments)")
             # print(link.get_attribute('href'))
+            # Adiciono o link a lista temporaria
             temp_links.append(link.get_attribute('href'))
             
         print(f"[bold green]Todos os links foram adicionados a lista.[/]")
@@ -145,6 +165,7 @@ def conteudo(pagina):
             
     else:
         print(f"[bold red]Nenhum conteúdo encontrado[/]")
+        return False
 
 # Válida e escreve no .json
 def add_json(nome, dados):
@@ -186,12 +207,12 @@ def start():
     lista = leitura_arq()
 
     print(f"""
-    {100*'='}
+    {99*'='}
     As buscas serão realizadas baseadas nas seguintes informações:
     Site: [bold blue]{URL}[/]
     Arquivo: [bold blue]{ARQ}[/]
     Buscas: [bold blue]{lista}[/]
-    {100*'='}
+    {99*'='}
     """)
 
     for i in range(3,0,-1):

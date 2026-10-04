@@ -86,20 +86,20 @@ def barra_pesquisa(pagina,lista):
             print(f"[bold red]Menu não encontrada[/]")
             raise RuntimeError("Barra e menu não encontrados")
 
-def pesquisar(pagina,barra,lista):
+# Realiza a pesquisa e chama funções de verificação e escrita no .json
+def pesquisar(pagina, barra, lista):
     btn = pagina.locator('[class="input-group-btn search-btn"]')
 
-    # Se o botão de pesquisa for visivel, realizo a pesquisa se não retorno um erro
     if btn.is_visible():
         print("[bold green]Botão de pesquisar encontrado[/]")
 
-        # Percorre minha lista de pesquisa
         for p in lista:
             barra.fill(p)
             btn.click()
             pagina.wait_for_load_state("domcontentloaded")
 
             print(f"[bold green]Pesquisa {p} realizada com sucesso[/]")
+
             todos_links = []
 
             while True:
@@ -111,7 +111,21 @@ def pesquisar(pagina,barra,lista):
                     break
 
             if todos_links:
-                add_json(p, todos_links)
+                print(
+                    f"[bold blue]Verificando português em "
+                    f"{len(todos_links)} resultados...[/]"
+                )
+
+                links_pt = check_portugues(pagina, todos_links)
+
+                if links_pt:
+                    add_json(p, links_pt)
+                else:
+                    print(
+                        "[bold yellow]"
+                        "Nenhum conteúdo em português encontrado"
+                        "[/]"
+                    )
 
             time.sleep(1)
 
@@ -197,12 +211,39 @@ def add_json(nome, dados):
     with open('content\\data.json', 'w', encoding='utf-8') as arq:
         json.dump(objeto, arq, ensure_ascii=False, indent=4)
 
+# Verifica se existe português na página
+def check_portugues(pagina,links):
+    links_pt = []
+    # Palavras que seram procuradas
+    contexto = ["pt-br","ptbr","portuguese","português","brazilian","brasil","brazil"]
+
+    for l in links:
+        pagina.goto(URL + l)
+        pagina.wait_for_load_state("domcontentloaded")
+        
+        txt = pagina.locator("body").inner_text().lower()
+        encontrado = False
+
+        for c in contexto:
+            if c in txt:
+                links_pt.append(l)
+                print(f"[bold green]Português encontrado: {c}[/]")
+                encontrado = True
+                break
+
+        if not encontrado:
+            print("[bold red]Português não encontrado[/]")
+
+    return False
+
 # Inicia todo o projeto
 def start():
+    # Limpa o terminal
     if os.name == 'nt':
         os.system('cls')
     else:
         os.system('clear') 
+
     validacao_env()
     lista = leitura_arq()
 

@@ -43,4 +43,4 @@ O projeto ainda estÃ¡ em desenvolvimento, e novas funcionalidades e ajustes serÃ
 
 ---
 ```markdown
-> EM DESENVOLVIMENTO
+> MVP finalizado

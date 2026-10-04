@@ -234,7 +234,7 @@ def check_portugues(pagina,links):
         if not encontrado:
             print("[bold red]Português não encontrado[/]")
 
-    return False
+    return links_pt
 
 # Inicia todo o projeto
 def start():

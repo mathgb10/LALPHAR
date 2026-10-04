@@ -137,12 +137,12 @@ def pesquisar(pagina, barra, lista):
 def btn_proximo(pagina):
     proximo = pagina.locator('li.next')
     if proximo.count() == 0:
-        print(f"[bold yellow]Botão próximo não encontrado[/]")
+        print(f"[bold red]Botão próximo não encontrado[/]")
         return False
 
     # Se o botão estiver desabilitado, retorno false
     if "disabled" in proximo.get_attribute('class'):
-        print(f"[bold yellow]Botão próximo desabilitado[/]")
+        print(f"[bold red]Botão próximo desabilitado[/]")
         return False
 
     link = proximo.locator('a')
@@ -167,14 +167,13 @@ def conteudo(pagina):
         for l in range(linha_tab.count()):
             linha = linha_tab.nth(l)
             celula = linha.locator("td").nth(1)
-            # :not é para evitar o item com a classe comments
+            # :not é para evitar o item  com a classe comments
             link = celula.locator("a:not(.comments)")
             # print(link.get_attribute('href'))
             # Adiciono o link a lista temporaria
             temp_links.append(link.get_attribute('href'))
             
-        print(f"[bold green]Todos os links foram adicionados a lista.[/]")
-        print(f"[bold blue]{temp_links}[/]")
+        print(f"[bold blue]Todos os links foram adicionados a lista.[/]")
         return temp_links
             
     else:
@@ -189,7 +188,7 @@ def add_json(nome, dados):
 
     # Verifica se a busca já existe
     if nome in objeto:
-        print(f'[bold red]Já possuímos dados de: {nome}[/]')
+        print(f'[bold yellow]Já possuímos dados de: {nome}[/]')
         novos = 0
 
         # Verifica cada link individualmente
@@ -199,9 +198,9 @@ def add_json(nome, dados):
                 novos += 1
 
         if novos == 0:
-            print('[bold yellow]Não há novos dados para adicionarmos[/]')
+            print('[bold red]Não há novos dados para adicionarmos[/]')
         else:
-            print(f'[bold green]Adicionamos {novos} dados novos ao .json[/]')
+            print(f'[bold blue]Adicionamos {novos} dados novos ao .json[/]')
 
     else:
         objeto[nome] = dados
@@ -216,6 +215,7 @@ def check_portugues(pagina,links):
     links_pt = []
     # Palavras que seram procuradas
     contexto = ["pt-br","ptbr","portuguese","português","brazilian","brasil","brazil"]
+    nao_encontrado = 0
 
     for l in links:
         pagina.goto(URL + l)
@@ -232,8 +232,13 @@ def check_portugues(pagina,links):
                 break
 
         if not encontrado:
-            print("[bold red]Português não encontrado[/]")
+            nao_encontrado += 1
 
+        if nao_encontrado == 10:
+            print(f"[bold yellow] 10 resultados sem portugués[/]")
+            nao_encontrado = 0
+
+    
     return links_pt
 
 # Inicia todo o projeto
